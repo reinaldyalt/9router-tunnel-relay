@@ -12,10 +12,30 @@
 const http = require("http");
 const { URL } = require("url");
 const WebSocket = require("ws");
+const { HttpsProxyAgent } = require("https-proxy-agent");
 
 const RELAY_URL = process.env.RELAY_URL;
 const TUNNEL_ID = process.env.TUNNEL_ID;
 const TARGET = process.env.TARGET || "http://127.0.0.1:20128";
+
+// The VM only reaches the public internet through the egress proxy —
+// route the outbound wss connection through it when one is configured.
+function buildAgent() {
+  const proxy =
+    process.env.HTTPS_PROXY || process.env.https_proxy || process.env.ALL_PROXY || process.env.all_proxy;
+  if (!proxy) return undefined;
+  try {
+    const relayHost = new URL(RELAY_URL).hostname;
+    const noProxy = (process.env.NO_PROXY || process.env.no_proxy || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (noProxy.some((n) => relayHost === n || relayHost.endsWith(n.replace(/^\./, "")))) return undefined;
+    return new HttpsProxyAgent(proxy);
+  } catch (_) {
+    return undefined;
+  }
+}
 
 if (!RELAY_URL || !TUNNEL_ID) {
   console.error("Set RELAY_URL and TUNNEL_ID env vars.");
@@ -76,8 +96,9 @@ let backoff = 1000;
 
 function connect() {
   const url = wsUrl();
-  console.log(`[client] connecting to relay...`);
-  const ws = new WebSocket(url);
+  const agent = buildAgent();
+  console.log(`[client] connecting to relay...${agent ? " (via proxy)" : ""}`);
+  const ws = new WebSocket(url, agent ? { agent } : undefined);
 
   const hb = setInterval(() => {
     if (ws.readyState === 1) send(ws, { type: "ping" });

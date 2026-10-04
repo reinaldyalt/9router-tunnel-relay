@@ -1,1 +1,1 @@
-{"dependencies":{"ws":"^8.18.0"},"description":"Minimal WebSocket relay: exposes a local 9Router instance through a public URL","engines":{"node":">=18"},"main":"relay.js","name":"9router-tunnel-relay","scripts":{"start":"node relay.js"},"version":"1.0.0"}
+{"dependencies":{"https-proxy-agent":"^7.0.6","ws":"^8.18.0"},"description":"Minimal WebSocket relay: exposes a local 9Router instance through a public URL","engines":{"node":">=18"},"main":"relay.js","name":"9router-tunnel-relay","scripts":{"start":"node relay.js"},"version":"1.0.0"}
